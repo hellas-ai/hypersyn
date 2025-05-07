@@ -2,35 +2,8 @@ use proc_macro2::TokenStream;
 use quote::format_ident;
 use syn::{Expr, FnArg, Ident, ItemFn, parse_quote, punctuated::Punctuated, token::Comma};
 
-use crate::util::{all_args, get_meta_and_var_args, meta_args, var_args};
-
-/// Given a signature, make identifiers “r_i” for each returned value.
-fn return_identifiers(sig: &syn::Signature) -> Vec<Ident> {
-    match &sig.output {
-        syn::ReturnType::Default => Vec::new(),
-        syn::ReturnType::Type(_, ty) => match &**ty {
-            syn::Type::Tuple(tuple) => (0..tuple.elems.len())
-                .map(|i| format_ident!("r_{}", i))
-                .collect(),
-            _ => vec![format_ident!("r_0")],
-        },
-    }
-}
-
-/// Given a list of idents, produce a matching pattern:
-/// - 0 ⇒ `_`
-/// - 1 ⇒ `r_0`
-/// - n ⇒ `(r_0, r_1, …, r_{n-1})`
-fn result_pattern(idents: &Vec<Ident>) -> syn::Pat {
-    match idents.len() {
-        0 => parse_quote! { _ },
-        1 => {
-            let id = &idents[0];
-            parse_quote! { #id }
-        }
-        _ => parse_quote! { (#(#idents),*) },
-    }
-}
+use crate::fn_args::{all_args, get_meta_and_var_args, meta_args, var_args};
+use crate::fn_returns::{result_pattern, return_identifiers};
 
 /// Given a function definition `definition` where:
 ///     - some arguments have type `var!(_)` ("ground" args)

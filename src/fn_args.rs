@@ -1,3 +1,6 @@
+//! Utilities to extract information from the arguments to a function.
+//! Arguments are represented internally as a pair of Ident, MixedType.
+//! The latter records simplify that a type was either a rust type, or the macro `var!(..)`.
 use proc_macro2::TokenStream;
 use quote::format_ident;
 use syn::{
