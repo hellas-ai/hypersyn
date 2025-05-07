@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::format_ident;
-use syn::{Expr, Ident, ItemFn, parse_quote, punctuated::Punctuated, token::Comma};
+use syn::{Expr, FnArg, Ident, ItemFn, parse_quote, punctuated::Punctuated, token::Comma};
 
-use crate::util::{all_args, fresh_name, get_meta_and_var_args, meta_args, var_args};
+use crate::util::{all_args, get_meta_and_var_args, meta_args, var_args};
 
 /// Given a signature, make identifiers “r_i” for each returned value.
 fn return_identifiers(sig: &syn::Signature) -> Vec<Ident> {
@@ -45,14 +45,13 @@ pub fn generate_arrow_fn(
 ) -> ItemFn {
     let meta_and_ground = get_meta_and_var_args(&definition.sig);
 
-    let meta_args: Punctuated<Ident, Comma> = meta_args(&meta_and_ground);
+    let meta_args: Punctuated<FnArg, Comma> = meta_args(&meta_and_ground);
     let all_args: Punctuated<Ident, Comma> = all_args(&meta_and_ground);
     let var_args: Vec<(Ident, TokenStream)> = var_args(&meta_and_ground);
 
     let builder_fn_name = definition.sig.ident.clone();
 
-    // pick a fresh name for the "builder" argument.
-    let builder_var_name = fresh_name("builder".to_string(), vec![]);
+    let state_var_name = format_ident! { "state" };
 
     // declare the var args by making new vars for each builder
     // let v_i = Var::new(#builder_var_name)
@@ -60,7 +59,7 @@ pub fn generate_arrow_fn(
         .clone()
         .into_iter()
         .map(|(ident, tokens)| {
-            parse_quote! { let #ident = open_hypergraphs::lax::var::Var::new(#builder_var_name.clone(), #tokens); }
+            parse_quote! { let #ident = open_hypergraphs::lax::var::Var::new(#state_var_name.clone(), #tokens); }
         })
         .collect();
 
@@ -92,7 +91,7 @@ pub fn generate_arrow_fn(
             use std::vec::*;
             use open_hypergraphs::lax::*;
 
-            let #builder_var_name = std::rc::Rc::new(std::cell::RefCell::new(OpenHypergraph::<#obj_type, #arr_type>::empty()));
+            let state = std::rc::Rc::new(std::cell::RefCell::new(OpenHypergraph::<#obj_type, #arr_type>::empty()));
 
             {
                 // Declare "var" args
@@ -100,20 +99,20 @@ pub fn generate_arrow_fn(
 
                 // Create a new source node for each Var.
                 // We do this before calling the builder function in case it takes ownership.
-                builder.borrow_mut().sources = vec![
+                state.borrow_mut().sources = vec![
                     #(#var_arg_new_source_exprs),*
                 ];
 
                 // Call the builder function with meta and var args
-                let result = #builder_fn_name(#builder_var_name.clone(), #all_args);
+                let result = #builder_fn_name(state.clone(), #all_args);
 
-                builder.borrow_mut().targets = {
+                state.borrow_mut().targets = {
                     let #result_pattern = result;
                     vec![#(#result_pattern_new_target_exprs),*]
                 }
             }
 
-            std::rc::Rc::try_unwrap(builder).unwrap().into_inner()
+            std::rc::Rc::try_unwrap(state).unwrap().into_inner()
         }
     }
 }

@@ -9,11 +9,8 @@ use proc_macro_error::proc_macro_error;
 use quote::quote;
 use syn::{Ident, ItemFn, Token, parse_macro_input, punctuated::Punctuated};
 
-/// Usage:
-/// #[arrow_fn(O, A, new_name)]
-/// fn build(builder: &mut Builder, x: X, y: Y) { … }
-#[proc_macro_attribute]
 #[proc_macro_error]
+#[proc_macro_attribute]
 pub fn def_arrow(attr: TokenStream, item: TokenStream) -> TokenStream {
     // 1. Parse the attribute arguments: (ObjType, ArrType, new_fn_name)
     let args = parse_macro_input!(attr with Punctuated::<Ident, Token![,]>::parse_terminated);

@@ -1,23 +1,9 @@
 use proc_macro2::TokenStream;
-use std::collections::HashSet;
-use syn::{FnArg, Ident, Pat, Signature, Type, TypeMacro, punctuated::Punctuated, token::Comma};
-
-// Try to use `fresh` as a fresh name, prefixing with underscores until it doesn't shadow an
-// identifier in `vars_in_scope`.
-pub fn fresh_name(mut fresh: String, vars_in_scope: Vec<Ident>) -> Ident {
-    // Get the sets of identifiers as strings.
-    let vars_set: HashSet<String> = vars_in_scope
-        .iter()
-        .map(|ident| ident.to_string())
-        .collect();
-
-    // Keep adding underscores until we find a name that doesn't shadow
-    while vars_set.contains(&fresh) {
-        fresh = format!("_{}", fresh);
-    }
-
-    Ident::new(&fresh, proc_macro2::Span::call_site())
-}
+use quote::format_ident;
+use syn::{
+    FnArg, Ident, Pat, Signature, Type, TypeMacro, parse_quote, punctuated::Punctuated,
+    token::Comma,
+};
 
 /// The `var!(value)` macro allows users to write rust values (`value`) in type positions. For
 /// example,
@@ -28,8 +14,7 @@ pub fn fresh_name(mut fresh: String, vars_in_scope: Vec<Ident>) -> Ident {
 ///     2. A `var!` macro value
 #[derive(Clone)]
 pub enum MixedType {
-    #[allow(dead_code)] // allow the unused syn::Type here.
-    Meta(syn::Type), // Metavariables just have a type.
+    Meta(syn::Type),  // Metavariables just have a type.
     Var(TokenStream), // Ground variables have a *value* - the label in the open hypergraph.
 }
 
@@ -50,15 +35,15 @@ pub fn type_to_mixed_type(ty: &syn::Type) -> MixedType {
     }
 }
 
-pub fn pat_to_ident(pat: &syn::Pat) -> syn::Ident {
+pub fn pat_to_ident(pat: &syn::Pat, arg_index: usize) -> syn::Ident {
     match pat {
-        Pat::Ident(pat_ident) => pat_ident.ident.clone(),
-        _ => panic!("TODO"),
+        Pat::Ident(pat_ident) => format_ident!("arg_{}_{}", arg_index, pat_ident.ident.clone()),
+        _ => format_ident!("arg_{}_pattern", arg_index),
     }
 }
 
-pub fn pat_type_to_mixed(pat_type: &syn::PatType) -> (Ident, MixedType) {
-    let ident = pat_to_ident(&pat_type.pat);
+pub fn pat_type_to_mixed(pat_type: &syn::PatType, arg_index: usize) -> (Ident, MixedType) {
+    let ident = pat_to_ident(&pat_type.pat, arg_index);
     let mixed_type = type_to_mixed_type(&pat_type.ty);
     (ident, mixed_type)
 }
@@ -67,11 +52,11 @@ pub fn pat_type_to_mixed(pat_type: &syn::PatType) -> (Ident, MixedType) {
 /// `MixedType`.
 pub fn get_meta_and_var_args(sig: &Signature) -> Vec<(Ident, MixedType)> {
     let mut result = Vec::new();
-    for arg in &sig.inputs {
+    for (arg_index, arg) in sig.inputs.iter().enumerate() {
         match arg {
             FnArg::Receiver(_) => panic!("TODO"),
             FnArg::Typed(pat_type) => {
-                result.push(pat_type_to_mixed(pat_type));
+                result.push(pat_type_to_mixed(pat_type, arg_index));
             }
         }
     }
@@ -79,11 +64,12 @@ pub fn get_meta_and_var_args(sig: &Signature) -> Vec<(Ident, MixedType)> {
 }
 
 /// Filter out the "meta" arguments from a list of identifiers and their `MixedType`.
-pub fn meta_args(args: &Vec<(Ident, MixedType)>) -> Punctuated<Ident, Comma> {
+pub fn meta_args(args: &Vec<(Ident, MixedType)>) -> Punctuated<FnArg, Comma> {
     let mut result = Punctuated::new();
     for (ident, ty) in args {
-        if let MixedType::Meta(_) = ty {
-            result.push(ident.clone())
+        if let MixedType::Meta(arg_type) = ty {
+            let fn_arg: FnArg = parse_quote! { #ident: #arg_type };
+            result.push(fn_arg)
         }
     }
     result
