@@ -52,7 +52,7 @@ pub fn generate_arrow_fn(
     let result_pattern_new_target_exprs: Vec<Expr> = return_idents
         .into_iter()
         .map(|ident| {
-            parse_quote! { #ident.new_source() }
+            parse_quote! { #ident.new_target() }
         })
         .collect();
 
