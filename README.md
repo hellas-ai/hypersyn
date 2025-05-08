@@ -24,7 +24,7 @@ open hypergraph when run:
 
 ![full adder circuit](./images/adder.png)
 
-A complete version of this example is in [./examples/adder.png].
+A complete version of this example is in [./examples/adder.rs](./examples/adder.rs).
 
 # How It Works
 
