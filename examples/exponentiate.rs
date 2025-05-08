@@ -7,41 +7,34 @@ use std::hash::Hash;
 
 // There is a single generating object in the category: the bit.
 #[derive(PartialEq, Clone, Debug, Hash)]
-pub struct Bit;
+pub enum Object {
+    Int,
+    Float,
+}
 
 // The generating operations are logic gates
 #[derive(PartialEq, Clone, Debug, Hash)]
-pub enum Gate {
-    Not,
-    Xor,
-    Zero, // 0 → 1
-    Or,
-    And,
-    One,
-    Copy, // explicit copying of values
+pub enum Operation {
+    Add,  // n → 1 add
+    Mul,  // n → 1 product
+    Copy, // 1 → n copy
 }
 
-impl var::HasVar for Gate {
-    fn var() -> Gate {
-        Gate::Copy
+impl var::HasVar for Operation {
+    fn var() -> Operation {
+        Operation::Copy
     }
 }
 
-impl var::HasBitXor<Bit, Gate> for Gate {
-    fn bitxor(_: Bit, _: Bit) -> (Bit, Gate) {
-        (Bit, Gate::Xor)
+impl var::HasAdd<Object, Operation> for Operation {
+    fn add(lhs_type: Object, _: Object) -> (Object, Operation) {
+        (lhs_type, Operation::Mul)
     }
 }
 
-impl var::HasBitAnd<Bit, Gate> for Gate {
-    fn bitand(_: Bit, _: Bit) -> (Bit, Gate) {
-        (Bit, Gate::And)
-    }
-}
-
-impl var::HasBitOr<Bit, Gate> for Gate {
-    fn bitor(_: Bit, _: Bit) -> (Bit, Gate) {
-        (Bit, Gate::Or)
+impl var::HasMul<Object, Operation> for Operation {
+    fn mul(lhs_type: Object, _: Object) -> (Object, Operation) {
+        (lhs_type, Operation::Mul)
     }
 }
 
@@ -50,16 +43,14 @@ impl var::HasBitOr<Bit, Gate> for Gate {
 
 use hypersyn::def_arrow;
 
-#[def_arrow(Bit, Gate, full_adder_arrow)]
-fn full_adder(a: var!(Bit), b: var!(Bit), cin: var!(Bit)) -> (var!(Bit), var!(Bit)) {
-    // we reuse this computation twice, so bind it here.
-    // This implicitly creats a Copy edge
-    let a_xor_b = a.clone() ^ b.clone();
-
-    let sum = a_xor_b.clone() ^ cin.clone();
-    let cout = (a & b) | (cin & a_xor_b.clone());
-
-    (sum, cout)
+/// Build a term representing x^(2^n)
+#[def_arrow(Object, Operation, exp_2n_arrow)]
+fn exp_2n(n: usize, x: var!(Object::Int)) -> var!(Object::Int) {
+    let mut x = x;
+    for _ in 0..n {
+        x = x.clone() * x
+    }
+    x
 }
 
 ////////////////////////////////////////
@@ -73,7 +64,7 @@ use graphviz_rust::{
 use open_hypergraphs_dot::{dark_theme, generate_dot};
 
 fn main() -> std::io::Result<()> {
-    let open_hypergraph = full_adder_arrow();
+    let open_hypergraph = exp_2n_arrow(3);
     let dot_graph = generate_dot(&open_hypergraph, &dark_theme());
 
     let png_bytes = exec(
@@ -81,6 +72,6 @@ fn main() -> std::io::Result<()> {
         &mut PrinterContext::default(),
         vec![CommandArg::Format(Format::Png)],
     )?;
-    std::fs::write("images/adder.png", png_bytes)?;
+    std::fs::write("images/exponentiate.png", png_bytes)?;
     Ok(())
 }
