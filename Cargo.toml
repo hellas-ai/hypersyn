@@ -2,6 +2,10 @@
 name = "hypersyn"
 version = "0.1.0"
 edition = "2024"
+description = "Macro Syntax for Open Hypergraphs"
+license = "MIT"
+repository = "https://github.com/hellas-ai/hypersyn"
+documentation = "https://docs.rs/hypersyn"
 
 [dependencies]
 syn = { version = "2.0", features = ["full", "extra-traits"] }
