@@ -1,6 +1,6 @@
 [package]
 name = "hypersyn"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Macro Syntax for Open Hypergraphs"
 license = "MIT"
@@ -12,13 +12,13 @@ syn = { version = "2.0", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0"
 ctor = "0.2.0"
-open-hypergraphs = "0.1.6"
+open-hypergraphs = "0.2.1"
 proc-macro-error = "1.0.4"
-state-macro = "0.1.0"
+state-macro = "0.1.1"
 
 [lib]
 proc-macro = true
 
 [dev-dependencies]
 graphviz-rust = "0.9.4"
-open-hypergraphs-dot = "0.1.2"
+open-hypergraphs-dot = "0.1.4"
