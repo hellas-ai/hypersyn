@@ -70,11 +70,11 @@ use graphviz_rust::{
     exec,
     printer::PrinterContext,
 };
-use open_hypergraphs_dot::{dark_theme, generate_dot};
+use open_hypergraphs_dot::generate_dot;
 
 fn main() -> std::io::Result<()> {
     let open_hypergraph = full_adder_arrow();
-    let dot_graph = generate_dot(&open_hypergraph, &dark_theme());
+    let dot_graph = generate_dot(&open_hypergraph);
 
     let png_bytes = exec(
         dot_graph,
