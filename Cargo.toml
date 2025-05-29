@@ -21,4 +21,4 @@ proc-macro = true
 
 [dev-dependencies]
 graphviz-rust = "0.9.4"
-open-hypergraphs-dot = "0.1.4"
+open-hypergraphs-dot = "0.2.0"
