@@ -4,6 +4,7 @@ mod fn_returns;
 mod var;
 
 extern crate proc_macro;
+
 use crate::definition::generate_arrow_fn;
 use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
@@ -37,7 +38,7 @@ pub fn def_arrow(attr: TokenStream, item: TokenStream) -> TokenStream {
     // 5. Combine original + generated
     let out = quote! {
         // original function, made "stateful"
-        #[state_macro::stateful_cloned(std::rc::Rc<std::cell::RefCell<open_hypergraphs::lax::OpenHypergraph<#obj_type, #arr_type>>>)]
+        #[state_macro::stateful(&std::rc::Rc<std::cell::RefCell<open_hypergraphs::lax::OpenHypergraph<#obj_type, #arr_type>>>)]
         #input_fn
 
         // Generated arrow definition

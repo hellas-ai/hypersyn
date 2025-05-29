@@ -77,7 +77,7 @@ pub fn generate_arrow_fn(
                 ];
 
                 // Call the builder function with meta and var args
-                let result = #builder_fn_name(state.clone(), #all_args);
+                let result = #builder_fn_name(&state, #all_args);
 
                 state.borrow_mut().targets = {
                     let #result_pattern = result;
